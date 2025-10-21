@@ -16,7 +16,7 @@ public interface IDroneService {
 
     DroneResponse createDrone(@Valid DroneCreateRequest req);
 
-    DroneResponse updateDrone(Long id, DroneUpdateRequest req);
+    DroneResponse updateDrone(String code, DroneUpdateRequest req);
 
     DroneResponse updateDroneLocation(Long id, @Valid DroneLocationRequest req);
 //    List<DroneResponse> getListDronesResponseByStatus(String status);

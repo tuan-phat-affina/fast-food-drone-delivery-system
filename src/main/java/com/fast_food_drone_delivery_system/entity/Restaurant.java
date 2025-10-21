@@ -13,6 +13,7 @@ public class Restaurant implements Serializable {
     private static final long serialVersionUID = -414506741261244862L;
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)

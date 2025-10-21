@@ -13,6 +13,7 @@ public class Drone implements Serializable {
     private static final long serialVersionUID = 7980135901401334589L;
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "code", nullable = false, length = 50)

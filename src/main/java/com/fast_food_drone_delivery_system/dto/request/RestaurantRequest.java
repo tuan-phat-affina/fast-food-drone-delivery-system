@@ -1,6 +1,5 @@
 package com.fast_food_drone_delivery_system.dto.request;
 
-import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,10 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class DroneCreateRequest {
-    String status;
-    String code;
-   Double currentLat;
-   Double currentLng;
-   Double batteryLevel;
+public class RestaurantRequest {
+    private String name;
+    private String address;
+    private String phone;
+    private String description;
 }
