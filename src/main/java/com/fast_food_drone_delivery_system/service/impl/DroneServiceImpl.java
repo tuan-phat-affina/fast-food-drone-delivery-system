@@ -1,5 +1,6 @@
 package com.fast_food_drone_delivery_system.service.impl;
 
+import com.fast_food_drone_delivery_system.common.IdGenerator;
 import com.fast_food_drone_delivery_system.common.SearchHelper;
 import com.fast_food_drone_delivery_system.dto.request.DroneCreateRequest;
 import com.fast_food_drone_delivery_system.dto.request.DroneLocationRequest;
@@ -15,12 +16,9 @@ import com.fast_food_drone_delivery_system.repository.DroneRepository;
 import com.fast_food_drone_delivery_system.service.IDroneService;
 import io.github.perplexhub.rsql.RSQLJPASupport;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,9 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -82,6 +78,7 @@ public class DroneServiceImpl implements IDroneService {
         }
 
         Drone drone = droneMapper.toDrone(request);
+        drone.setId(IdGenerator.generateRandomId());
         drone.setCode(request.getCode().trim());
         drone.setStatus(status.name());
         drone.setLastUpdated(Instant.now());

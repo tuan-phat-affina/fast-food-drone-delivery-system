@@ -1,5 +1,6 @@
 package com.fast_food_drone_delivery_system.service.impl;
 
+import com.fast_food_drone_delivery_system.common.IdGenerator;
 import com.fast_food_drone_delivery_system.common.SearchHelper;
 import com.fast_food_drone_delivery_system.dto.request.DishRequest;
 import com.fast_food_drone_delivery_system.dto.response.DishResponse;
@@ -50,6 +51,7 @@ public class DishServiceImpl implements IDishService {
         }
 
         Dish dish = dishMapper.toDish(req);
+        dish.setId(IdGenerator.generateRandomId());
         dish.setRestaurant(restaurant);
         dish.setStatus(DishStatus.AVAILABLE.name());
         dish.setCreatedAt(Instant.now());

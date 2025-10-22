@@ -26,7 +26,12 @@ public enum ErrorCode {
     DATASOURCE_ALREADY_EXISTS("COMMON_001", "Data source already exists", HttpStatus.BAD_REQUEST),
     DATASOURCE_NOT_FOUND("COMMON_002", "Data source not found", HttpStatus.BAD_REQUEST),
     ERR_SYSTEM("ERR_SYSTEM", "System error", HttpStatus.INTERNAL_SERVER_ERROR),
-    DATASOURCE_ENUM_NOT_FOUND("ENUM_01", "Data source not found", HttpStatus.BAD_REQUEST );
+    DATASOURCE_ENUM_NOT_FOUND("ENUM_01", "Data source not found", HttpStatus.BAD_REQUEST ),
+
+    //RESTAURANT
+    UNAUTHORIZED_TO_UPDATE_THIS_RESOURCE("UNAUTHORIZED_001", "Unauthorized to update this resource", HttpStatus.UNAUTHORIZED),
+
+    ;
 
     ErrorCode(String code, String message, HttpStatus statusCode) {
         this.code = code;

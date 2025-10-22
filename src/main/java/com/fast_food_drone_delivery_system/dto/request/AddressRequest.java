@@ -5,13 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class RestaurantRequest {
-    private String name;
-    private AddressRequest address;
-    private String phone;
-    private String description;
+public class AddressRequest {
+    private String street;
+    private String city;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
+    private String type;
 }

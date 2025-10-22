@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class RestaurantResponse {
     private Long id;
     private String name;
-    private String address;
+    private AddressResponse address;
     private String phone;
     private String description;
     private Long ownerId;

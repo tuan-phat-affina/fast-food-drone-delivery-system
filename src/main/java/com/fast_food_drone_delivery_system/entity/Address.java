@@ -1,6 +1,9 @@
 package com.fast_food_drone_delivery_system.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -8,6 +11,9 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 @Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "addresses")
 public class Address implements Serializable {
     private static final long serialVersionUID = 8846234645069885742L;

@@ -20,7 +20,6 @@ import java.time.Instant;
 public class Dish implements Serializable {
     private static final long serialVersionUID = -4555220839655395241L;
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 

@@ -45,7 +45,7 @@ public class DroneController {
     }
 
     // @PreAuthorize("hasRole('RESTAURANT') or hasRole('ADMIN')")
-    @PutMapping("/{id}")
+    @PutMapping("/{code}")
     public ResponseEntity<DroneResponse> update(@PathVariable String code, @Valid @RequestBody DroneUpdateRequest req) {
         DroneResponse updated = droneService.updateDrone(code, req);
         return ResponseEntity.ok(updated);

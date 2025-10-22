@@ -15,8 +15,6 @@ public interface DishMapper {
 
     DishResponse toDishResponse(Dish request);
 
-    @Mapping(target = "lastUpdated", ignore = true)
-    @Mapping(target = "status", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateDish(@MappingTarget Dish entity, DishRequest request);
 }

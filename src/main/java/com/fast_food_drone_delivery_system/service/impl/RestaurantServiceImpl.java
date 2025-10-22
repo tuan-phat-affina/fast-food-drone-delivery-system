@@ -1,13 +1,17 @@
 package com.fast_food_drone_delivery_system.service.impl;
 
+import com.fast_food_drone_delivery_system.common.IdGenerator;
 import com.fast_food_drone_delivery_system.common.SearchHelper;
+import com.fast_food_drone_delivery_system.dto.request.AddressRequest;
 import com.fast_food_drone_delivery_system.dto.request.RestaurantRequest;
 import com.fast_food_drone_delivery_system.dto.response.DroneResponse;
 import com.fast_food_drone_delivery_system.dto.response.ListResponse;
 import com.fast_food_drone_delivery_system.dto.response.RestaurantResponse;
+import com.fast_food_drone_delivery_system.entity.Address;
 import com.fast_food_drone_delivery_system.entity.Drone;
 import com.fast_food_drone_delivery_system.entity.Restaurant;
 import com.fast_food_drone_delivery_system.entity.User;
+import com.fast_food_drone_delivery_system.enums.AddressTypeStatus;
 import com.fast_food_drone_delivery_system.enums.DroneStatus;
 import com.fast_food_drone_delivery_system.enums.RestaurantStatus;
 import com.fast_food_drone_delivery_system.exception.AppException;
@@ -30,6 +34,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -47,10 +52,22 @@ public class RestaurantServiceImpl implements IRestaurantService {
         User owner = userRepository.findById(ownerId)
                 .orElseThrow(() -> new AppException(ErrorCode.DATASOURCE_NOT_FOUND));
 
+        Address address = Address.builder()
+                .id(IdGenerator.generateRandomId())
+                .user(owner)
+                .street(request.getAddress().getStreet())
+                .city(request.getAddress().getCity())
+                .latitude(request.getAddress().getLatitude())
+                .longitude(request.getAddress().getLongitude())
+                .type(AddressTypeStatus.RESTAURANT.name())
+                .build();
+
         Restaurant restaurant = restaurantMapper.toRestaurant(request);
+        restaurant.setId(IdGenerator.generateRandomId());
         restaurant.setOwner(owner);
         restaurant.setRating(BigDecimal.ONE);
         restaurant.setStatus(RestaurantStatus.OPEN.name());
+        restaurant.setAddress(address);
         restaurant.setCreatedAt(Instant.now());
         restaurant.setUpdatedAt(Instant.now());
 
@@ -61,7 +78,19 @@ public class RestaurantServiceImpl implements IRestaurantService {
 
     @Override
     public RestaurantResponse updateRestaurant(Long id, Long ownerId, RestaurantRequest req) {
-        return null;
+        log.info("request: {}, {}, {}", id, ownerId, req);
+        Restaurant restaurant = restaurantRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.DATASOURCE_NOT_FOUND));
+
+        if (!Objects.equals(restaurant.getOwner().getId(), ownerId)) {
+            log.error("restaurant owner: {} and ownerId: {}", restaurant.getOwner().getId(), ownerId);
+            throw new AppException(ErrorCode.UNAUTHORIZED_TO_UPDATE_THIS_RESOURCE);
+        }
+        restaurantMapper.updateRestaurant(restaurant, req);
+        restaurant.setUpdatedAt(Instant.now());
+        restaurantRepository.save(restaurant);
+
+        return restaurantMapper.toRestaurantResponse(restaurant);
     }
 
     @Override
