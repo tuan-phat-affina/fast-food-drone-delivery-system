@@ -24,7 +24,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -106,7 +105,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
 
         // Tạo user mới
         User newUser = User.builder()
-                .id(Long.valueOf(request.getPhone()))
+                .id(IdGenerator.generateRandomId())
                 .username(request.getUsername())
                 .password(encodedPassword)
                 .fullName(request.getFullname())
