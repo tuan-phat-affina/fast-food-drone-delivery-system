@@ -27,10 +27,16 @@ public enum ErrorCode {
     DATASOURCE_NOT_FOUND("COMMON_002", "Data source not found", HttpStatus.BAD_REQUEST),
     ERR_SYSTEM("ERR_SYSTEM", "System error", HttpStatus.INTERNAL_SERVER_ERROR),
     DATASOURCE_ENUM_NOT_FOUND("ENUM_01", "Data source not found", HttpStatus.BAD_REQUEST ),
-
+    BUSINESS_INVALID_SEQUENCE("BUSINESS_001", "Business invalid sequence", HttpStatus.BAD_REQUEST ),
     //RESTAURANT
     UNAUTHORIZED_TO_UPDATE_THIS_RESOURCE("UNAUTHORIZED_001", "Unauthorized to update this resource", HttpStatus.UNAUTHORIZED),
+    RESTAURANT_NOT_FOUND("RESTAURANT_001", "Restaurant not found", HttpStatus.NOT_FOUND),
 
+    //Order
+    DISH_NOT_FOUND("DISH_001", "Dish not found", HttpStatus.NOT_FOUND),
+    DISH_SERVING_STOPPED("DISH_002", "This dish is no longer being served", HttpStatus.SERVICE_UNAVAILABLE ),
+    ORDER_NOT_FOUND("ORDER_001", "Order not found", HttpStatus.NOT_FOUND),
+    DRONE_UNAVAILABLE("DRONE_001", "Drone unavailable", HttpStatus.SERVICE_UNAVAILABLE),
     ;
 
     ErrorCode(String code, String message, HttpStatus statusCode) {

@@ -1,7 +1,10 @@
 package com.fast_food_drone_delivery_system.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -11,6 +14,9 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "order_items")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class OrderItem implements Serializable {
     private static final long serialVersionUID = -8796533190468046220L;
     @Id
