@@ -31,6 +31,9 @@ public class Restaurant implements Serializable {
     @Column(name = "phone", length = 20)
     private String phone;
 
+    @Column(name = "email", nullable = false, length = 150)
+    private String email;
+
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, optional = false)
     @JoinColumn(name = "address_id", nullable = false)
     private Address address;
