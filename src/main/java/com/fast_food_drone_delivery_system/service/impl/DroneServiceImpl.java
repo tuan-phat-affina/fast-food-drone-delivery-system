@@ -80,7 +80,7 @@ public class DroneServiceImpl implements IDroneService {
         Drone drone = droneMapper.toDrone(request);
         drone.setId(IdGenerator.generateRandomId());
         drone.setCode(request.getCode().trim());
-        drone.setStatus(status.name());
+        drone.setStatus(status);
         drone.setLastUpdated(Instant.now());
 
         Drone savedDrone = droneRepository.save(drone);
@@ -105,7 +105,7 @@ public class DroneServiceImpl implements IDroneService {
             if (status == DroneStatus.AVAILABLE && drone.getBatteryLevel() != null && drone.getBatteryLevel().compareTo(BigDecimal.valueOf(10.0)) < 0) {
                 throw new AppException(ErrorCode.INVALID_BUSINESS_FLOW);
             }
-            drone.setStatus(status.name());
+            drone.setStatus(status);
         }
 
         // Cập nhật các trường khác nếu có
