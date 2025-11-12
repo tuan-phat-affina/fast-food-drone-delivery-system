@@ -5,5 +5,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record UpdateOrderStatusRequest(
         @NotNull RestaurantOrderAction action,
+        Long paymentId,
         String reason // optional, required for REJECT maybe
 ) {}

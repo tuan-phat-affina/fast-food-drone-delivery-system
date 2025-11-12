@@ -2,8 +2,12 @@ package com.fast_food_drone_delivery_system.service.impl;
 
 import com.fast_food_drone_delivery_system.common.IdGenerator;
 import com.fast_food_drone_delivery_system.common.RestResponse;
+import com.fast_food_drone_delivery_system.common.SearchHelper;
+import com.fast_food_drone_delivery_system.dto.model.OrderEvent;
+import com.fast_food_drone_delivery_system.dto.model.OrderPendingCheckEvent;
 import com.fast_food_drone_delivery_system.dto.request.OrderCreateRequest;
 import com.fast_food_drone_delivery_system.dto.request.UpdateOrderStatusRequest;
+import com.fast_food_drone_delivery_system.dto.response.ListResponse;
 import com.fast_food_drone_delivery_system.dto.response.OrderResponse;
 import com.fast_food_drone_delivery_system.entity.*;
 import com.fast_food_drone_delivery_system.enums.*;
@@ -11,20 +15,27 @@ import com.fast_food_drone_delivery_system.exception.AppException;
 import com.fast_food_drone_delivery_system.exception.ErrorCode;
 import com.fast_food_drone_delivery_system.mapper.OrderMapper;
 import com.fast_food_drone_delivery_system.repository.*;
+import com.fast_food_drone_delivery_system.service.EventPublisher;
 import com.fast_food_drone_delivery_system.service.IOrderService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.github.perplexhub.rsql.RSQLJPASupport;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +50,11 @@ public class OrderServiceImpl implements IOrderService {
     DroneRepository droneRepository;
     AddressRepository addressRepository;
     OrderMapper orderMapper;
+    PaymentRepository paymentRepository;
+    EventPublisher eventPublisher;
+    VnPayService vnPayService;
+
+    private static final List<String> SEARCH_FIELDS = List.of("status");
 
     @Transactional
     @Override
@@ -116,6 +132,22 @@ public class OrderServiceImpl implements IOrderService {
             // cascade persist will save items
             Order saved = orderRepository.save(order);
 
+            eventPublisher.publish(OrderEvent.builder()
+                            .orderId(saved.getId())
+                            .emailTo(List.of(customer.getEmail(), "lamthanh51124@gmail.com"))
+                            .status(saved.getStatus())
+                            .occurredAt(Instant.now())
+                            .metadata(Map.of(
+                                    "totalAmount", saved.getTotalAmount(),
+                                    "deliveryAddress", saved.getDeliveryAddress().toString()
+                            ))
+                    .build());
+
+            eventPublisher.pulishEvent(OrderPendingCheckEvent.builder()
+                            .orderId(saved.getId())
+                            .scheduledTime(Instant.now().plus(Duration.ofMinutes(2)))
+                    .build());
+
             // TODO: if paymentMethod is ONLINE, create Payment entity + call payment gateway (out of scope here)
             return RestResponse.ok(orderMapper.toOrderResponse(saved));
         } catch (AppException e) {
@@ -131,49 +163,72 @@ public class OrderServiceImpl implements IOrderService {
     }
 
     @Override
-    public RestResponse<Page<OrderResponse>> listCustomerOrders(Long customerId, Pageable p) {
-        return null;
+    public RestResponse<ListResponse<OrderResponse>> getListOrdersByFilter(int page, int size, String sort, String filter, String search, boolean all) {
+        Specification<Order> sortable = RSQLJPASupport.toSort(sort);
+        Specification<Order> filterable = RSQLJPASupport.toSpecification(filter);
+        Specification<Order> searchable = SearchHelper.parseSearchToken(search, SEARCH_FIELDS);
+        Pageable pageable = all ? Pageable.unpaged() : PageRequest.of(page - 1, size);
+        Page<OrderResponse> responses = orderRepository
+                .findAll(sortable.and(filterable).and(searchable), pageable)
+                .map(orderMapper::toOrderResponse);
+        return RestResponse.ok(ListResponse.of(responses));
     }
 
     @Override
-    public RestResponse<Page<OrderResponse>> listRestaurantOrders(Long ownerId, Long restaurantId, Pageable p) {
-        return null;
-    }
-
-    @Override
-    public RestResponse<OrderResponse> restaurantHandleOrderStatus(Long ownerId, Long orderId, UpdateOrderStatusRequest request) {
+    public RestResponse<OrderResponse> restaurantHandleOrderStatus(String ipAddress, Long ownerId, Long orderId, UpdateOrderStatusRequest request) {
         try {
             log.info("Start to handle restaurant accept request: {}", orderId);
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
+            Payment payment = paymentRepository.findById(request.paymentId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+
             if (!order.getRestaurant().getOwner().getId().equals(ownerId)) {
                 throw new AppException(ErrorCode.UNAUTHORIZED_TO_UPDATE_THIS_RESOURCE);
             }
-            if (order.getStatus() != OrderStatus.PENDING) {
+            if (order.getStatus() != OrderStatus.PREPARING || payment.getStatus() != PaymentStatus.SUCCESS) {
                 throw new AppException(ErrorCode.BUSINESS_INVALID_SEQUENCE);
             }
 
             switch (request.action()) {
                 case ACCEPT -> {
-                    order.setStatus(OrderStatus.PREPARING);
-                    order.setUpdatedAt(Instant.now());
-                    orderRepository.save(order);
+                    order.setStatus(OrderStatus.COOKING);
                 }
 
                 case REJECT, CANCEL -> {
                     order.setStatus(OrderStatus.CANCELLED);
-                    order.setUpdatedAt(Instant.now());
-                    orderRepository.save(order);
+                    if (payment != null && payment.getStatus() == PaymentStatus.SUCCESS) {
+                        vnPayService.refund(payment, payment.getAmount().longValue(), ipAddress); // gọi API refund
+                        payment.setStatus(PaymentStatus.REFUNDED);
+                        paymentRepository.save(payment);
+                    }
                 }
             }
+
+            order.setUpdatedAt(Instant.now());
+            orderRepository.save(order);
+
+            eventPublisher.publish(OrderEvent.builder()
+                    .orderId(order.getId())
+                    .emailTo(List.of(order.getCustomer().getEmail()))
+                    .status(order.getStatus())
+                    .occurredAt(Instant.now())
+                    .metadata(Map.of(
+                            "totalAmount", order.getTotalAmount(),
+                            "deliveryAddress", order.getDeliveryAddress()
+                    ))
+                    .build());
             return RestResponse.ok(orderMapper.toOrderResponse(orderRepository.save(order)));
         } catch (AppException e) {
             log.error(e.getMessage());
             throw e;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 
+    //todo
     @Override
     public RestResponse<OrderResponse> restaurantReadyForPickup(Long ownerId, Long orderId) {
         try {
@@ -183,7 +238,7 @@ public class OrderServiceImpl implements IOrderService {
             if (!order.getRestaurant().getOwner().getId().equals(ownerId)) {
                 throw new AppException(ErrorCode.UNAUTHORIZED_TO_UPDATE_THIS_RESOURCE);
             }
-            if (order.getStatus() != OrderStatus.PREPARING) {
+            if (order.getStatus() != OrderStatus.COOKING) {
                 throw new AppException(ErrorCode.BUSINESS_INVALID_SEQUENCE);
             }
 
@@ -210,14 +265,17 @@ public class OrderServiceImpl implements IOrderService {
             if (candidates == null || candidates.isEmpty()) {
                 throw new AppException(ErrorCode.DRONE_UNAVAILABLE);
             }
-            Drone chosen = candidates.get(0); // query ordered by distance
+            log.info("candidates: {}", candidates.stream().map(drone -> System.out.printf(drone.toString())));
+            Drone chosen = candidates.get(0);
 
             // 2. Update drone status to DELIVERING (locked row so others cannot pick it)
-            chosen.setStatus(DroneStatus.DELIVERING.name());
+            chosen.setStatus(DroneStatus.DELIVERING);
+            chosen.setLastUpdated(Instant.now());
             droneRepository.save(chosen);
 
             // 3. Create DeliveryTask and link to order
             DeliveryTask task = DeliveryTask.builder()
+                    .id(IdGenerator.generateRandomId())
                     .order(order)
                     .drone(chosen)
                     .pickupLat(pickupLat).pickupLng(pickupLng)
@@ -236,6 +294,16 @@ public class OrderServiceImpl implements IOrderService {
 
             // OPTIONAL: publish event to Drone System (message queue) to instruct drone to pickup
             // publishDeliveryAssignedEvent(task);
+            eventPublisher.publish(OrderEvent.builder()
+                    .orderId(order.getId())
+                    .emailTo(List.of(order.getCustomer().getEmail()))
+                    .status(order.getStatus())
+                    .occurredAt(Instant.now())
+                    .metadata(Map.of(
+                            "totalAmount", order.getTotalAmount(),
+                            "deliveryAddress", order.getDeliveryAddress()
+                    ))
+                    .build());
 
             return RestResponse.ok(orderMapper.toOrderResponse(saved));
         } catch (AppException e) {
@@ -246,7 +314,44 @@ public class OrderServiceImpl implements IOrderService {
 
     @Override
     public RestResponse<OrderResponse> confirmDelivered(Long userIdOrSystemId, Long orderId) {
-        return null;
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+        if (order.getStatus() != OrderStatus.SHIPPING) {
+            throw new AppException(ErrorCode.BUSINESS_INVALID_SEQUENCE);
+        }
+
+        order.setStatus(OrderStatus.DELIVERED);
+        order.setUpdatedAt(Instant.now());
+
+        DeliveryTask deliveryTask = deliveryTaskRepository.findByOrder_Id(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.BUSINESS_INVALID_SEQUENCE));
+
+        if (deliveryTask != null) {
+            deliveryTask.setStatus(DeliveryStatus.DELIVERED);
+            deliveryTask.setCompletedAt(Instant.now());
+            deliveryTaskRepository.save(deliveryTask);
+
+            Drone drone = deliveryTask.getDrone();
+            if (drone != null) {
+                drone.setStatus(DroneStatus.AVAILABLE);
+                drone.setLastUpdated(Instant.now());
+                droneRepository.save(drone);
+            }
+        }
+
+        eventPublisher.publish(OrderEvent.builder()
+                .orderId(order.getId())
+                .emailTo(List.of(order.getCustomer().getEmail()))
+                .status(order.getStatus())
+                .occurredAt(Instant.now())
+                .metadata(Map.of(
+                        "totalAmount", order.getTotalAmount(),
+                        "deliveryAddress", order.getDeliveryAddress()
+                ))
+                .build());
+
+        return RestResponse.ok(orderMapper.toOrderResponse(order));
     }
 
     private double computeShippingFee(Restaurant restaurant, Long deliveryAddressId) {
