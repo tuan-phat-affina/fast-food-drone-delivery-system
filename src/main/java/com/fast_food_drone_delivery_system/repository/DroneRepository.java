@@ -18,7 +18,6 @@ public interface DroneRepository extends JpaRepository<Drone, Long>, JpaSpecific
 
     Optional<Drone> findByCode(@NotBlank(message = "code is required") String code);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select d from Drone d where d.status = :status order by (d.currentLat - :lat)*(d.currentLat - :lat) + (d.currentLng - :lng)*(d.currentLng - :lng)")
-    List<Drone> findAvailableDronesForUpdate(DroneStatus droneStatus, BigDecimal pickupLat, BigDecimal pickupLng);
+    @Query("select d from Drone d where d.status = :status order by (d.currentLat - :pickupLat)*(d.currentLat - :pickupLat) + (d.currentLng - :pickupLng)*(d.currentLng - :pickupLng)")
+    List<Drone> findAvailableDronesForUpdate(DroneStatus status, BigDecimal pickupLat, BigDecimal pickupLng);
 }

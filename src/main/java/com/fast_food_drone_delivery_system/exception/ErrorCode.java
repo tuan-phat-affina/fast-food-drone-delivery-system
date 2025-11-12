@@ -37,6 +37,10 @@ public enum ErrorCode {
     DISH_SERVING_STOPPED("DISH_002", "This dish is no longer being served", HttpStatus.SERVICE_UNAVAILABLE ),
     ORDER_NOT_FOUND("ORDER_001", "Order not found", HttpStatus.NOT_FOUND),
     DRONE_UNAVAILABLE("DRONE_001", "Drone unavailable", HttpStatus.SERVICE_UNAVAILABLE),
+
+    //PAYMENT
+    PAYMENT_NOT_FOUND("PAYMENT_001", "Payment not found", HttpStatus.NOT_FOUND),
+    REFUND_FAILED("PATMENT_002", "Refund failed", HttpStatus.SERVICE_UNAVAILABLE),
     ;
 
     ErrorCode(String code, String message, HttpStatus statusCode) {
