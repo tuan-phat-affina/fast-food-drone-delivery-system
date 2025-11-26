@@ -66,6 +66,8 @@ public class RestaurantServiceImpl implements IRestaurantService {
         restaurant.setId(IdGenerator.generateRandomId());
         restaurant.setOwner(owner);
         restaurant.setRating(BigDecimal.ONE);
+        restaurant.setPhone(request.getPhone());
+        restaurant.setEmail(request.getEmail());
         restaurant.setStatus(RestaurantStatus.OPEN.name());
         restaurant.setAddress(address);
         restaurant.setCreatedAt(Instant.now());

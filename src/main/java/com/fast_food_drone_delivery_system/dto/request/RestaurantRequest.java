@@ -13,5 +13,6 @@ public class RestaurantRequest {
     private String name;
     private AddressRequest address;
     private String phone;
+    private String email;
     private String description;
 }

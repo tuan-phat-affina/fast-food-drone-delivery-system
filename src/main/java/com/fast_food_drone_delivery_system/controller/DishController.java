@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.*;
 public class DishController extends BaseController {
     private final IDishService dishService;
 
-    @PostMapping
+    @PostMapping("/{restaurantId}")
     public ResponseEntity<RestResponse<DishResponse>> createDish(
-            @RequestParam Long restaurantId,
+            @PathVariable Long restaurantId,
             @RequestBody DishRequest request,
             HttpServletRequest httpReq) {
         Long ownerId = extractUserIdFromRequest(httpReq);
@@ -29,13 +29,12 @@ public class DishController extends BaseController {
     public ResponseEntity<RestResponse<ListResponse<DishResponse>>> getListDishes(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int size,
-            @RequestParam(defaultValue = "code,desc") String sort,
+            @RequestParam(defaultValue = "id,desc") String sort,
             @RequestParam(required = false) String filter,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) boolean all) {
         return ResponseEntity.ok(dishService.getListDishes(page, size, sort, filter, search, all));
     }
-
     @PutMapping("/{dishId}")
     public ResponseEntity<RestResponse<DishResponse>> updateDish(
             @PathVariable Long dishId,

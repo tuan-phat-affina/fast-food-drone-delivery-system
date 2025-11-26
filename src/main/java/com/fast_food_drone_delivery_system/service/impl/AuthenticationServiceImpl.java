@@ -100,7 +100,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         String encodedPassword = passwordEncoder.encode(request.getPassword());
 
         var role = new HashSet<Role>();
-        Role userRole = roleRepository.findByName(PredefinedRole.USER_ROLE);
+        Role userRole = roleRepository.findByName(request.getStatus());
         role.add(userRole);
 
         // Tạo user mới
