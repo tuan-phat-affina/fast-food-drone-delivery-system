@@ -28,6 +28,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -357,6 +358,41 @@ public class OrderServiceImpl implements IOrderService {
     private double computeShippingFee(Restaurant restaurant, Long deliveryAddressId) {
         // Todo: For now fixed fee; in real app compute distance and formula.
         return 5.0;
+    }
+
+    @Transactional
+//    @Scheduled(cron = "0 0/7 * * * ?")  // Cron chạy mỗi 5 phút
+    public void cancelPendingOrdersOlderThan5Minutes() {
+        log.info("Checking for orders that are still pending for more than 5 minutes...");
+
+        Instant fiveMinutesAgo = Instant.now().minus(Duration.ofMinutes(5));
+
+        // Lấy các đơn hàng có status là PENDING và createdAt > 5 phút
+        List<Order> pendingOrders = orderRepository.findByStatusAndCreatedAtBefore(OrderStatus.PENDING, fiveMinutesAgo);
+
+        if (pendingOrders.isEmpty()) {
+            log.info("No orders found to cancel.");
+            return;
+        }
+
+        for (Order order : pendingOrders) {
+            log.info("Canceling order with ID: {}", order.getId());
+            order.setStatus(OrderStatus.CANCELLED);
+            order.setUpdatedAt(Instant.now());
+            orderRepository.save(order);
+
+            // Gửi sự kiện hủy đơn hàng (nếu cần thiết)
+            eventPublisher.publish(OrderEvent.builder()
+                    .orderId(order.getId())
+                    .status(order.getStatus())
+                    .emailTo(List.of(order.getCustomer().getEmail()))
+                    .occurredAt(Instant.now())
+                    .metadata(Map.of(
+                            "totalAmount", order.getTotalAmount(),
+                            "deliveryAddress", order.getDeliveryAddress()
+                    ))
+                    .build());
+        }
     }
 
 }

@@ -17,6 +17,7 @@ public class DishResponse {
     private String name;
     private String description;
     private Double price;
-    private Boolean available;
+    private String status;
     private Long restaurantId;
+    private String restaurantName;
 }

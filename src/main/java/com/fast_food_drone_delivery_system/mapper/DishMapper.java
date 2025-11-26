@@ -13,6 +13,8 @@ public interface DishMapper {
 
     Dish toDish(DishRequest request);
 
+    @Mapping(target = "restaurantId", source = "restaurant.id")
+    @Mapping(target = "restaurantName", source = "restaurant.name")
     DishResponse toDishResponse(Dish request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

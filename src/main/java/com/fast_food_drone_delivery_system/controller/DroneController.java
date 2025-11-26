@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,21 +38,21 @@ public class DroneController {
         return ResponseEntity.ok(droneService.getDroneDetail(id));
     }
 
-    // @PreAuthorize("hasRole('RESTAURANT') or hasRole('ADMIN')")  // enable in real app
+     @PreAuthorize("hasRole('RESTAURANT') or hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<DroneResponse> create(@Valid @RequestBody DroneCreateRequest req) {
         DroneResponse created = droneService.createDrone(req);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    // @PreAuthorize("hasRole('RESTAURANT') or hasRole('ADMIN')")
+     @PreAuthorize("hasRole('RESTAURANT') or hasRole('ADMIN')")
     @PutMapping("/{code}")
     public ResponseEntity<DroneResponse> update(@PathVariable String code, @Valid @RequestBody DroneUpdateRequest req) {
         DroneResponse updated = droneService.updateDrone(code, req);
         return ResponseEntity.ok(updated);
     }
 
-    // @PreAuthorize("hasRole('DRONE_SYSTEM') or hasRole('ADMIN')")
+     @PreAuthorize("hasRole('DRONE_SYSTEM') or hasRole('ADMIN')")
     @PostMapping("/{id}/location")
     public ResponseEntity<DroneResponse> updateLocation(@PathVariable Long id, @Valid @RequestBody DroneLocationRequest req) {
         DroneResponse res = droneService.updateDroneLocation(id, req);

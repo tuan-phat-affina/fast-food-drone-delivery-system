@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 public class RestaurantResponse {
-    private Long id;
+    private String id;
     private String name;
     private AddressResponse address;
     private String phone;
