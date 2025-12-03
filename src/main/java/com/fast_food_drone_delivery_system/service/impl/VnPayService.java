@@ -42,8 +42,6 @@ public class VnPayService {
     private String paymentUrl;
     @Value("${vnpay.returnUrl}")
     private String returnUrl;
-    @Value("${vnpay.ipnUrl}")
-    private String ipnUrl;
     @Value("${vnpay.refundUrl}")
     private String refundUrl;
 
