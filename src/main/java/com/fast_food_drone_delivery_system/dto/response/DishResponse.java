@@ -13,11 +13,11 @@ import java.time.Instant;
 @AllArgsConstructor
 @Data
 public class DishResponse {
-    private Long id;
+    private String id;
     private String name;
     private String description;
     private Double price;
     private String status;
-    private Long restaurantId;
+    private String restaurantId;
     private String restaurantName;
 }

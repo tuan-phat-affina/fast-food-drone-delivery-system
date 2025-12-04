@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AddressResponse {
-    private Integer id;
+    private String id;
     private Integer ownerId;
     private String street;
     private String city;

@@ -1,6 +1,7 @@
 package com.fast_food_drone_delivery_system.service.impl;
 
 import com.fast_food_drone_delivery_system.common.IdGenerator;
+import com.fast_food_drone_delivery_system.common.PredefinedRole;
 import com.fast_food_drone_delivery_system.common.RestResponse;
 import com.fast_food_drone_delivery_system.common.SearchHelper;
 import com.fast_food_drone_delivery_system.dto.request.DishRequest;
@@ -8,12 +9,14 @@ import com.fast_food_drone_delivery_system.dto.response.DishResponse;
 import com.fast_food_drone_delivery_system.dto.response.ListResponse;
 import com.fast_food_drone_delivery_system.entity.Dish;
 import com.fast_food_drone_delivery_system.entity.Restaurant;
+import com.fast_food_drone_delivery_system.entity.User;
 import com.fast_food_drone_delivery_system.enums.DishStatus;
 import com.fast_food_drone_delivery_system.exception.AppException;
 import com.fast_food_drone_delivery_system.exception.ErrorCode;
 import com.fast_food_drone_delivery_system.mapper.DishMapper;
 import com.fast_food_drone_delivery_system.repository.DishRepository;
 import com.fast_food_drone_delivery_system.repository.RestaurantRepository;
+import com.fast_food_drone_delivery_system.repository.UserRepository;
 import com.fast_food_drone_delivery_system.service.IDishService;
 import io.github.perplexhub.rsql.RSQLJPASupport;
 import lombok.AccessLevel;
@@ -26,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -36,6 +40,7 @@ import java.util.List;
 public class DishServiceImpl implements IDishService {
     DishRepository dishRepository;
     RestaurantRepository restaurantRepository;
+    UserRepository userRepository;
     DishMapper dishMapper;
 
     private static final List<String> SEARCH_FIELDS = List.of("name", "status", "price", "restaurant_id");
@@ -45,9 +50,8 @@ public class DishServiceImpl implements IDishService {
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new AppException(ErrorCode.DATASOURCE_NOT_FOUND));
 
-        if (!restaurant.getOwner().getId().equals(ownerId)) {
-            throw new RuntimeException("Unauthorized to add dish to this restaurant");
-        }
+        User user = userRepository.findById(ownerId)
+                .orElseThrow(() ->new AppException(ErrorCode.USER_NOT_EXISTED));
 
         Dish dish = dishMapper.toDish(req);
         dish.setId(IdGenerator.generateRandomId());
@@ -71,7 +75,31 @@ public class DishServiceImpl implements IDishService {
     }
 
     @Override
-    public RestResponse<DishResponse> updateDish(Long dishId, DishRequest req, Long ownerId) {
-        return null;
+    public RestResponse<DishResponse> updateDish(Long dishId, Long restaurantId, DishRequest req, Long ownerId) {
+        // Tìm nhà hàng và người dùng
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new AppException(ErrorCode.DATASOURCE_NOT_FOUND));
+
+        User user = userRepository.findById(ownerId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+
+        // Tìm món ăn (Dish) cần cập nhật
+        Dish dish = dishRepository.findById(dishId)
+                .orElseThrow(() -> new AppException(ErrorCode.DISH_NOT_FOUND));
+
+        // Cập nhật các trường trong món ăn
+        dish.setName(req.getName() );
+        dish.setDescription(req.getDescription());
+        dish.setPrice(BigDecimal.valueOf(req.getPrice()));
+
+        // Nếu muốn cập nhật thêm trường khác từ DishRequest, có thể tiếp tục ở đây
+
+        // Lưu món ăn đã cập nhật
+        Dish updatedDish = dishRepository.save(dish);
+
+        // Trả về kết quả
+        return RestResponse.ok(dishMapper.toDishResponse(updatedDish));
     }
+
 }

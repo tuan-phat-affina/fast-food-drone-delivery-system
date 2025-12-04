@@ -1,5 +1,6 @@
 package com.fast_food_drone_delivery_system.controller;
 
+import com.fast_food_drone_delivery_system.common.RestResponse;
 import com.fast_food_drone_delivery_system.dto.request.RestaurantRequest;
 import com.fast_food_drone_delivery_system.dto.response.ListResponse;
 import com.fast_food_drone_delivery_system.dto.response.RestaurantResponse;
@@ -16,11 +17,12 @@ public class RestaurantController extends BaseController {
     private final IRestaurantService restaurantService;
 
     @PostMapping
-    public ResponseEntity<RestaurantResponse> createRestaurant(
+    public ResponseEntity<RestResponse<RestaurantResponse>> createRestaurant(
             @RequestBody RestaurantRequest request,
             HttpServletRequest httpReq) {
         Long ownerId = extractUserIdFromRequest(httpReq);
-        return ResponseEntity.ok(restaurantService.createRestaurant(ownerId, request));
+        RestResponse<RestaurantResponse> response = restaurantService.createRestaurant(ownerId, request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
@@ -35,11 +37,19 @@ public class RestaurantController extends BaseController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RestaurantResponse> updateRestaurant(
+    public ResponseEntity<RestResponse<RestaurantResponse>> updateRestaurant(
             @PathVariable Long id,
             HttpServletRequest httpReq,
             @RequestBody RestaurantRequest request) {
         Long ownerId = extractUserIdFromRequest(httpReq);
-        return ResponseEntity.ok(restaurantService.updateRestaurant(id, ownerId, request));
+        RestResponse<RestaurantResponse> response = restaurantService.updateRestaurant(id, ownerId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<RestResponse<RestaurantResponse>> deactivateRestaurant(
+            @PathVariable Long id) {
+        RestResponse<RestaurantResponse> response = restaurantService.deactivateRestaurant(id);
+        return ResponseEntity.ok(response);
     }
 }

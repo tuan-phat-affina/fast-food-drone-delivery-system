@@ -10,5 +10,5 @@ public interface IDishService {
 
     RestResponse<ListResponse<DishResponse>> getListDishes(int page, int size, String sort, String filter, String search, boolean all);
 
-    RestResponse<DishResponse> updateDish(Long dishId, DishRequest req, Long ownerId);
+    RestResponse<DishResponse> updateDish(Long dishId, Long restaurantId, DishRequest req, Long ownerId);
 }

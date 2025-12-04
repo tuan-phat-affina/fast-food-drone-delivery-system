@@ -35,11 +35,13 @@ public class DishController extends BaseController {
             @RequestParam(required = false) boolean all) {
         return ResponseEntity.ok(dishService.getListDishes(page, size, sort, filter, search, all));
     }
-    @PutMapping("/{dishId}")
+    @PutMapping("/{dishId}/restaurant/{restaurantId}")
     public ResponseEntity<RestResponse<DishResponse>> updateDish(
             @PathVariable Long dishId,
-            @RequestHeader("X-Owner-Id") Long ownerId,
+            @PathVariable Long restaurantId,
+            HttpServletRequest httpReq,
             @RequestBody DishRequest request) {
-        return ResponseEntity.ok(dishService.updateDish(dishId, request, ownerId));
+        Long ownerId = extractUserIdFromRequest(httpReq);
+        return ResponseEntity.ok(dishService.updateDish(dishId, restaurantId, request, ownerId));
     }
 }

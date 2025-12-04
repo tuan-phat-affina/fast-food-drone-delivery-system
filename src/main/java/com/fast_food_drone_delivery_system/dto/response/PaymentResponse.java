@@ -9,8 +9,8 @@ import java.time.Instant;
 
 @Builder
 public record PaymentResponse(
-        Long id,
-        Long orderId,
+        String id,
+        String orderId,
         PaymentMethod method,
         PaymentStatus status,
         BigDecimal amount,

@@ -1,6 +1,11 @@
 package com.fast_food_drone_delivery_system.controller;
 
 import com.fast_food_drone_delivery_system.common.RestResponse;
+import com.fast_food_drone_delivery_system.entity.Order;
+import com.fast_food_drone_delivery_system.entity.Payment;
+import com.fast_food_drone_delivery_system.enums.PaymentStatus;
+import com.fast_food_drone_delivery_system.exception.AppException;
+import com.fast_food_drone_delivery_system.exception.ErrorCode;
 import com.fast_food_drone_delivery_system.service.impl.VnPayService;
 import com.fast_food_drone_delivery_system.repository.OrderRepository;
 import com.fast_food_drone_delivery_system.repository.PaymentRepository;
@@ -13,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -50,4 +56,21 @@ public class VnPayGatewayController {
         RestResponse<String> response = paymentService.handleVnPayIpn(request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+
+    @GetMapping("/status/{orderId}")
+    public ResponseEntity<RestResponse<String>> getPaymentStatus(@PathVariable Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+        Payment payment = paymentRepository.findByOrder_Id(order.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        // Kiểm tra trạng thái thanh toán của đơn hàng
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            return ResponseEntity.ok(new RestResponse<>(200, "Thanh toán thành công", null));
+        } else {
+            return ResponseEntity.ok(new RestResponse<>(200, "Thanh toán thất bại", null));
+        }
+    }
+
 }

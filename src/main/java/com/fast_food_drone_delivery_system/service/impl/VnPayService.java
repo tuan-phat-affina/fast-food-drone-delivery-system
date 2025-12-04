@@ -60,7 +60,7 @@ public class VnPayService {
         vnpParams.put("vnp_OrderType", "other");
         vnpParams.put("vnp_Locale", locale != null ? locale : "vn");
         vnpParams.put("vnp_ReturnUrl", returnUrl);
-//        vnpParams.put("vnp_IpnUrl", ipnUrl);
+//        vnpParams.put("vnp_IpnUrl", ipnUrl); // trong docx vnpay không yeu cau truyền
         vnpParams.put("vnp_IpAddr", clientIp);
 
         String createDate = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.of("Asia/Ho_Chi_Minh")).format(Instant.now());

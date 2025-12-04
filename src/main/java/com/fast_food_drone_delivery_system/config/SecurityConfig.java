@@ -23,7 +23,7 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENPOINTS = {"/users", "/auth/login", "/auth/register", "/auth/introspect",
             "/auth/logout", "/auth/refresh", "/auth/revoke"};
 
-    private static final String[] PUBLIC_ENPOINTS_FOR_GET = {"/api/payments/vnpay/ipn", "/api/payments/vnpay/return", "/api/restaurants", "/api/dishes", "/api/restaurants"};
+    private static final String[] PUBLIC_ENPOINTS_FOR_GET = {"/api/users", "/api/payments/vnpay/ipn", "/api/payments/vnpay/return", "/api/restaurants", "/api/dishes", "/api/restaurants"};
 
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
