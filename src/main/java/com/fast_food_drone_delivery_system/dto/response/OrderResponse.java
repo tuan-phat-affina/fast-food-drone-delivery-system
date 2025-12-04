@@ -8,9 +8,12 @@ import java.time.Instant;
 import java.util.List;
 
 public record OrderResponse (
-        Long id,
+        String id,
         Long customerId,
+        String customerName,
+        String customerPhone,
         Long restaurantId,
+        String restaurantName,
         OrderStatus status,
         Double totalAmount,
         Double shippingFee,
@@ -20,7 +23,7 @@ public record OrderResponse (
         Instant updatedAt
 ) {
     public record OrderItemResponse(
-            Long dishId,
+            String dishId,
             String dishName,
             Integer qty,
             Double unitPrice,
@@ -28,8 +31,8 @@ public record OrderResponse (
     ) {}
 
     public record DeliveryTaskSummary(
-            Long id,
-            Long droneId,
+            String id,
+            String droneId,
             DeliveryStatus status,
             BigDecimal pickupLat,
             BigDecimal pickupLng,

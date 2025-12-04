@@ -18,6 +18,7 @@ public interface RestaurantMapper {
     Restaurant toRestaurant(RestaurantRequest request);
 
     @Mapping(target = "ownerId", source = "owner.id")
+    @Mapping(target = "status", source = "status")
     RestaurantResponse toRestaurantResponse(Restaurant restaurant);
 
     @Mapping(target = "address", ignore = true)

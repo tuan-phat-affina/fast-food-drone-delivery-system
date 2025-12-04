@@ -13,7 +13,7 @@ import java.time.Instant;
 @AllArgsConstructor
 @Data
 public class DroneResponse {
-    private Long id;
+    private String id;
     private String code;
     private DroneStatus status;
     private Double currentLat;

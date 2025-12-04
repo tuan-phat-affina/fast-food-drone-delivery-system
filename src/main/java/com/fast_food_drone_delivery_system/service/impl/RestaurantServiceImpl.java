@@ -1,6 +1,8 @@
 package com.fast_food_drone_delivery_system.service.impl;
 
 import com.fast_food_drone_delivery_system.common.IdGenerator;
+import com.fast_food_drone_delivery_system.common.PredefinedRole;
+import com.fast_food_drone_delivery_system.common.RestResponse;
 import com.fast_food_drone_delivery_system.common.SearchHelper;
 import com.fast_food_drone_delivery_system.dto.request.AddressRequest;
 import com.fast_food_drone_delivery_system.dto.request.RestaurantRequest;
@@ -14,10 +16,12 @@ import com.fast_food_drone_delivery_system.entity.User;
 import com.fast_food_drone_delivery_system.enums.AddressTypeStatus;
 import com.fast_food_drone_delivery_system.enums.DroneStatus;
 import com.fast_food_drone_delivery_system.enums.RestaurantStatus;
+import com.fast_food_drone_delivery_system.enums.UserStatus;
 import com.fast_food_drone_delivery_system.exception.AppException;
 import com.fast_food_drone_delivery_system.exception.ErrorCode;
 import com.fast_food_drone_delivery_system.mapper.RestaurantMapper;
 import com.fast_food_drone_delivery_system.repository.RestaurantRepository;
+import com.fast_food_drone_delivery_system.repository.RoleRepository;
 import com.fast_food_drone_delivery_system.repository.UserRepository;
 import com.fast_food_drone_delivery_system.service.IRestaurantService;
 import io.github.perplexhub.rsql.RSQLJPASupport;
@@ -29,10 +33,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -44,14 +51,72 @@ public class RestaurantServiceImpl implements IRestaurantService {
     RestaurantRepository restaurantRepository;
     UserRepository userRepository;
     RestaurantMapper restaurantMapper;
+    RoleRepository roleRepository;
 
     private static final List<String> SEARCH_FIELDS = List.of("name", "address_id", "rating", "status");
 
+//    @Override
+//    public RestaurantResponse createRestaurant(Long ownerId, RestaurantRequest request) {
+//        User owner = userRepository.findById(ownerId)
+//                .orElseThrow(() -> new AppException(ErrorCode.DATASOURCE_NOT_FOUND));
+//
+//        Address address = Address.builder()
+//                .id(IdGenerator.generateRandomId())
+//                .user(owner)
+//                .street(request.getAddress().getStreet())
+//                .city(request.getAddress().getCity())
+//                .latitude(request.getAddress().getLatitude())
+//                .longitude(request.getAddress().getLongitude())
+//                .type(AddressTypeStatus.RESTAURANT.name())
+//                .build();
+//
+//        Restaurant restaurant = restaurantMapper.toRestaurant(request);
+//        restaurant.setId(IdGenerator.generateRandomId());
+//        restaurant.setOwner(owner);
+//        restaurant.setRating(BigDecimal.ONE);
+//        restaurant.setPhone(request.getPhone());
+//        restaurant.setEmail(request.getEmail());
+//        restaurant.setStatus(RestaurantStatus.OPEN.name());
+//        restaurant.setAddress(address);
+//        restaurant.setCreatedAt(Instant.now());
+//        restaurant.setUpdatedAt(Instant.now());
+//
+//        Restaurant savedRestaurant = restaurantRepository.save(restaurant);
+//        return restaurantMapper.toRestaurantResponse(savedRestaurant);
+//
+//    }
+
     @Override
-    public RestaurantResponse createRestaurant(Long ownerId, RestaurantRequest request) {
-        User owner = userRepository.findById(ownerId)
+    public RestResponse<RestaurantResponse> createRestaurant(Long adminId, RestaurantRequest request) {
+        // Kiểm tra xem người tạo có phải là Admin không
+        User admin = userRepository.findById(adminId)
                 .orElseThrow(() -> new AppException(ErrorCode.DATASOURCE_NOT_FOUND));
 
+        if (!admin.getRole().stream().anyMatch(role -> role.getName().equals(PredefinedRole.ADMIN_ROLE))) {
+            throw new RuntimeException("Unauthorized to create restaurant");
+        }
+
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        String encodedPassword = passwordEncoder.encode(request.getRegisterRequest().getPassword());
+
+
+        // Tạo tài khoản owner mới từ request
+        User owner = User.builder()
+                .id(IdGenerator.generateRandomId())
+                .username(request.getRegisterRequest().getUsername())  // Lấy tên owner từ request
+                .fullName(request.getRegisterRequest().getFullname())
+                .email(request.getRegisterRequest().getEmail()) // Lấy email của owner từ request
+                .password(encodedPassword) // Lấy mật khẩu từ request (nên mã hóa mật khẩu)
+                .role(Collections.singleton(roleRepository.findByName(PredefinedRole.RESTAURANT_ROLE)))
+                .status(UserStatus.ACTIVE.name())
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        // Lưu tài khoản owner vào cơ sở dữ liệu
+        userRepository.save(owner);
+
+        // Tạo địa chỉ cho nhà hàng
         Address address = Address.builder()
                 .id(IdGenerator.generateRandomId())
                 .user(owner)
@@ -62,24 +127,28 @@ public class RestaurantServiceImpl implements IRestaurantService {
                 .type(AddressTypeStatus.RESTAURANT.name())
                 .build();
 
+        // Tạo nhà hàng và liên kết với owner và địa chỉ
         Restaurant restaurant = restaurantMapper.toRestaurant(request);
         restaurant.setId(IdGenerator.generateRandomId());
-        restaurant.setOwner(owner);
-        restaurant.setRating(BigDecimal.ONE);
+        restaurant.setOwner(owner);  // Gắn owner mới
+        restaurant.setRating(BigDecimal.ONE);  // Giá trị đánh giá mặc định
         restaurant.setPhone(request.getPhone());
         restaurant.setEmail(request.getEmail());
-        restaurant.setStatus(RestaurantStatus.OPEN.name());
+        restaurant.setStatus(RestaurantStatus.OPEN.name());  // Nhà hàng được mở
         restaurant.setAddress(address);
         restaurant.setCreatedAt(Instant.now());
         restaurant.setUpdatedAt(Instant.now());
 
+        // Lưu nhà hàng vào cơ sở dữ liệu
         Restaurant savedRestaurant = restaurantRepository.save(restaurant);
-        return restaurantMapper.toRestaurantResponse(savedRestaurant);
 
+        // Trả về kết quả
+        return RestResponse.ok(restaurantMapper.toRestaurantResponse(savedRestaurant));
     }
 
+
     @Override
-    public RestaurantResponse updateRestaurant(Long id, Long ownerId, RestaurantRequest req) {
+    public RestResponse<RestaurantResponse> updateRestaurant(Long id, Long ownerId, RestaurantRequest req) {
         log.info("request: {}, {}, {}", id, ownerId, req);
         Restaurant restaurant = restaurantRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DATASOURCE_NOT_FOUND));
@@ -92,7 +161,7 @@ public class RestaurantServiceImpl implements IRestaurantService {
         restaurant.setUpdatedAt(Instant.now());
         restaurantRepository.save(restaurant);
 
-        return restaurantMapper.toRestaurantResponse(restaurant);
+        return RestResponse.ok(restaurantMapper.toRestaurantResponse(restaurant));
     }
 
     @Override
@@ -106,5 +175,20 @@ public class RestaurantServiceImpl implements IRestaurantService {
                 .map(restaurantMapper::toRestaurantResponse);
 
         return ListResponse.of(responses);
+    }
+
+    @Override
+    public RestResponse<RestaurantResponse> deactivateRestaurant(Long id) {
+        Restaurant restaurant = restaurantRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.DATASOURCE_NOT_FOUND));
+
+        // Cập nhật trạng thái nhà hàng thành INACTIVE
+        restaurant.setStatus(RestaurantStatus.INACTIVE.name());
+        restaurant.setUpdatedAt(Instant.now());
+
+        // Lưu lại trạng thái mới vào database
+        Restaurant updatedRestaurant = restaurantRepository.save(restaurant);
+
+        return RestResponse.ok(restaurantMapper.toRestaurantResponse(updatedRestaurant));
     }
 }

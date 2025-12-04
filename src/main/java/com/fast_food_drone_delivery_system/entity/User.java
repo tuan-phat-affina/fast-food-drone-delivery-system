@@ -7,6 +7,7 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -44,6 +45,9 @@ public class User implements Serializable {
 
     @ManyToMany
     Set<Role> role;
+
+    @OneToMany(mappedBy = "user")  // Specify the "user" field in the Address entity
+    Set<Address> address;
 
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)

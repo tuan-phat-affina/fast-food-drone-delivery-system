@@ -92,8 +92,8 @@ public class PaymentServiceImpl implements IPaymentService {
             paymentRepository.save(payment);
 
             return RestResponse.ok(PaymentResponse.builder()
-                    .id(payment.getId())
-                    .orderId(order.getId())
+                    .id(payment.getId().toString())
+                    .orderId(order.getId().toString())
                     .method(payment.getMethod())
                     .status(payment.getStatus())
                     .amount(payment.getAmount())
@@ -180,7 +180,7 @@ public class PaymentServiceImpl implements IPaymentService {
 
         publishPaymentEvent(payment, order, params);
 
-        return RestResponse.ok("Thanh toán " + ("00".equals(responseCode) ? "thành công" : "thất bại"));
+        return RestResponse.ok("Thanh toán " + ("00".equals(responseCode) ? "success" : "failure"));
     }
 
     private Map<String, String> extractVnpParams(HttpServletRequest request) {

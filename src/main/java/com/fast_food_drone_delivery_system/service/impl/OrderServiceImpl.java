@@ -84,6 +84,7 @@ public class OrderServiceImpl implements IOrderService {
                 addressRepository.save(deliveryAddress);
                 order.setDeliveryAddress(deliveryAddress);
             } else if (req.deliveryAddressId() != null) {
+                log.info("vo");
                 deliveryAddress = addressRepository.findById(req.deliveryAddressId())
                         .orElseThrow(() -> new AppException(ErrorCode.DATASOURCE_NOT_FOUND));
                 order.setDeliveryAddress(deliveryAddress);
@@ -146,7 +147,7 @@ public class OrderServiceImpl implements IOrderService {
 
             eventPublisher.pulishEvent(OrderPendingCheckEvent.builder()
                             .orderId(saved.getId())
-                            .scheduledTime(Instant.now().plus(Duration.ofMinutes(2)))
+                            .scheduledTime(Instant.now().plus(Duration.ofMinutes(7)))
                     .build());
 
             // TODO: if paymentMethod is ONLINE, create Payment entity + call payment gateway (out of scope here)
@@ -165,6 +166,7 @@ public class OrderServiceImpl implements IOrderService {
 
     @Override
     public RestResponse<ListResponse<OrderResponse>> getListOrdersByFilter(int page, int size, String sort, String filter, String search, boolean all) {
+        log.info("getListOrdersByFilter: {}", filter);
         Specification<Order> sortable = RSQLJPASupport.toSort(sort);
         Specification<Order> filterable = RSQLJPASupport.toSpecification(filter);
         Specification<Order> searchable = SearchHelper.parseSearchToken(search, SEARCH_FIELDS);
@@ -182,7 +184,7 @@ public class OrderServiceImpl implements IOrderService {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-            Payment payment = paymentRepository.findById(request.paymentId())
+            Payment payment = paymentRepository.findByOrder_Id(order.getId())
                     .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
 
             if (!order.getRestaurant().getOwner().getId().equals(ownerId)) {

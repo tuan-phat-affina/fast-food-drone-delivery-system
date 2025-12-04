@@ -2,15 +2,17 @@ package com.fast_food_drone_delivery_system.service.impl;
 
 import com.fast_food_drone_delivery_system.common.IdGenerator;
 import com.fast_food_drone_delivery_system.common.PredefinedRole;
+import com.fast_food_drone_delivery_system.common.SearchHelper;
 import com.fast_food_drone_delivery_system.dto.request.*;
-import com.fast_food_drone_delivery_system.dto.response.AuthenticationResponse;
-import com.fast_food_drone_delivery_system.dto.response.IntrospectResponse;
+import com.fast_food_drone_delivery_system.dto.response.*;
 import com.fast_food_drone_delivery_system.entity.InvalidatedToken;
+import com.fast_food_drone_delivery_system.entity.Restaurant;
 import com.fast_food_drone_delivery_system.entity.Role;
 import com.fast_food_drone_delivery_system.entity.User;
 import com.fast_food_drone_delivery_system.enums.UserStatus;
 import com.fast_food_drone_delivery_system.exception.AppException;
 import com.fast_food_drone_delivery_system.exception.ErrorCode;
+import com.fast_food_drone_delivery_system.mapper.UserMapper;
 import com.fast_food_drone_delivery_system.repository.InvalidatedTokenRepository;
 import com.fast_food_drone_delivery_system.repository.RoleRepository;
 import com.fast_food_drone_delivery_system.repository.UserRepository;
@@ -20,6 +22,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import io.github.perplexhub.rsql.RSQLJPASupport;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -27,6 +30,10 @@ import lombok.experimental.NonFinal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,10 +42,7 @@ import org.springframework.util.CollectionUtils;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.StringJoiner;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +52,9 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     UserRepository userRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
     RoleRepository roleRepository;
+    UserMapper userMapper;
+
+    private static final List<String> SEARCH_FIELDS = List.of("fullname");
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -215,6 +222,19 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             log.error("Cannot sign JWT object", e);
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public ListResponse<UserResponse> getListUsers(int page, int size, String sort, String filter, String search, boolean all) {
+        Specification<User> sortable = RSQLJPASupport.toSort(sort);
+        Specification<User> filterable = RSQLJPASupport.toSpecification(filter);
+        Specification<User> searchable = SearchHelper.parseSearchToken(search, SEARCH_FIELDS);
+        Pageable pageable = all ? Pageable.unpaged() : PageRequest.of(page - 1, size);
+        Page<UserResponse> responses = userRepository
+                .findAll(sortable.and(filterable).and(searchable), pageable)
+                .map(userMapper::toUserResponse);
+
+        return ListResponse.of(responses);
     }
 
     private String buildScope(User user) {
