@@ -16,4 +16,6 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     Page<Order> findByRestaurant_Id(Long restaurantId, Pageable p);
 
     List<Order> findByStatusAndCreatedAtBefore(OrderStatus orderStatus, Instant fiveMinutesAgo);
+
+    List<Order> findByRestaurantIdAndCreatedAtBetween(Long restaurantId, Instant startDate, Instant endDate);
 }
