@@ -20,4 +20,5 @@ public class DishResponse {
     private String status;
     private String restaurantId;
     private String restaurantName;
+    private Double discount;
 }
