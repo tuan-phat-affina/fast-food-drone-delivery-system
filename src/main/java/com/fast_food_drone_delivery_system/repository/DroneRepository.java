@@ -20,4 +20,8 @@ public interface DroneRepository extends JpaRepository<Drone, Long>, JpaSpecific
 
     @Query("select d from Drone d where d.status = :status order by (d.currentLat - :pickupLat)*(d.currentLat - :pickupLat) + (d.currentLng - :pickupLng)*(d.currentLng - :pickupLng)")
     List<Drone> findAvailableDronesForUpdate(DroneStatus status, BigDecimal pickupLat, BigDecimal pickupLng);
+
+    long countByStatus(DroneStatus status);
+
+    long countByStatusOrBatteryLevelLessThan(DroneStatus status, BigDecimal batteryLevel);
 }

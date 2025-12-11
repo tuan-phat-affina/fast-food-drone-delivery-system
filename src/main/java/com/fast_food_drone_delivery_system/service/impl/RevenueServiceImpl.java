@@ -2,10 +2,13 @@ package com.fast_food_drone_delivery_system.service.impl;
 
 import com.fast_food_drone_delivery_system.common.RestResponse;
 import com.fast_food_drone_delivery_system.dto.request.RevenueRequest;
+import com.fast_food_drone_delivery_system.dto.response.DroneDashboardResponse;
 import com.fast_food_drone_delivery_system.dto.response.RevenueResponse;
 import com.fast_food_drone_delivery_system.entity.Order;
+import com.fast_food_drone_delivery_system.enums.DroneStatus;
 import com.fast_food_drone_delivery_system.exception.AppException;
 import com.fast_food_drone_delivery_system.exception.ErrorCode;
+import com.fast_food_drone_delivery_system.repository.DroneRepository;
 import com.fast_food_drone_delivery_system.repository.OrderRepository;
 import com.fast_food_drone_delivery_system.repository.RestaurantRepository;
 import com.fast_food_drone_delivery_system.service.IRevenueService;
@@ -28,6 +31,7 @@ import java.util.List;
 public class RevenueServiceImpl implements IRevenueService {
     OrderRepository orderRepository;
     RestaurantRepository restaurantRepository;
+    DroneRepository droneRepository;
 
     @Override
     public RestResponse<RevenueResponse> getRevenue(RevenueRequest request) {
@@ -35,25 +39,43 @@ public class RevenueServiceImpl implements IRevenueService {
             throw new AppException(ErrorCode.DATASOURCE_NOT_FOUND);
         }
 
-        LocalDate firstDayOfMonth = LocalDate.of(request.getYear(), request.getMonth(), 1);
-        LocalDate lastDayOfMonth = firstDayOfMonth.withDayOfMonth(firstDayOfMonth.lengthOfMonth());
+        // Nếu không truyền năm → lấy năm hiện tại
+        int year = (request.getYear() == null)
+                ? LocalDate.now().getYear()
+                : request.getYear();
 
-        Instant startDate = firstDayOfMonth.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
-        Instant endDate = lastDayOfMonth.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant();
+        Instant startDate;
+        Instant endDate;
 
-        log.info("start date is {}, {}", startDate, endDate);
+        if (request.getMonth() == null) {
+            // ❗ Không truyền tháng → lấy toàn bộ năm
+            LocalDate startOfYear = LocalDate.of(year, 1, 1);
+            LocalDate endOfYear = LocalDate.of(year, 12, 31);
 
+            startDate = startOfYear.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
+            endDate = endOfYear.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant();
+        } else {
+            // Có truyền month → lấy doanh thu theo tháng trong năm
+            LocalDate firstDayOfMonth = LocalDate.of(year, request.getMonth(), 1);
+            LocalDate lastDayOfMonth = firstDayOfMonth.withDayOfMonth(firstDayOfMonth.lengthOfMonth());
+
+            startDate = firstDayOfMonth.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
+            endDate = lastDayOfMonth.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant();
+        }
+
+        log.info("Revenue query range: {} - {}", startDate, endDate);
 
         List<Order> orders = orderRepository.findByRestaurantIdAndCreatedAtBetween(
                 request.getRestaurantId(), startDate, endDate
         );
-        log.info("orders size is {}", orders.size());
+
+        log.info("Orders found: {}", orders.size());
 
         if (orders.isEmpty()) {
             return RestResponse.ok(new RevenueResponse(BigDecimal.ZERO, 0));
         }
 
-        // Tính tổng doanh thu và tổng số đơn hàng
+        // Tính tổng doanh thu
         BigDecimal totalRevenue = orders.stream()
                 .map(Order::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -70,5 +92,28 @@ public class RevenueServiceImpl implements IRevenueService {
         log.info("Total restaurants in system: {}", count);
 
         return RestResponse.ok(count);
+    }
+
+    @Override
+    public RestResponse<DroneDashboardResponse> getDroneStatusSnapshot() {
+        long total = droneRepository.count();
+        long available = droneRepository.countByStatus(DroneStatus.AVAILABLE);
+        long delivering = droneRepository.countByStatus(DroneStatus.DELIVERING);
+
+        // MAINTENANCE OR battery_level < 20%
+        long needMaintenance = droneRepository
+                .countByStatusOrBatteryLevelLessThan(
+                        DroneStatus.MAINTENANCE,
+                        new BigDecimal("20")
+                );
+
+        DroneDashboardResponse response = new DroneDashboardResponse(
+                total,
+                available,
+                delivering,
+                needMaintenance
+        );
+
+        return RestResponse.ok(response);
     }
 }

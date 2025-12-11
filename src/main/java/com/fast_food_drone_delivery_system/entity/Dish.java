@@ -41,6 +41,9 @@ public class Dish implements Serializable {
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
+    @Column(name = "discount", nullable = false, precision = 10, scale = 2)
+    private BigDecimal discount;
+
     @NotNull
     @ColumnDefault("'AVAILABLE'")
     @Lob

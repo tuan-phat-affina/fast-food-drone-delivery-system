@@ -15,6 +15,7 @@ public interface DishMapper {
 
     @Mapping(target = "restaurantId", source = "restaurant.id")
     @Mapping(target = "restaurantName", source = "restaurant.name")
+    @Mapping(target = "discount", source = "discount")
     DishResponse toDishResponse(Dish request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

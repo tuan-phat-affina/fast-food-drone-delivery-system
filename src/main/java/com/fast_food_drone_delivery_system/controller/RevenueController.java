@@ -2,6 +2,7 @@ package com.fast_food_drone_delivery_system.controller;
 
 import com.fast_food_drone_delivery_system.common.RestResponse;
 import com.fast_food_drone_delivery_system.dto.request.RevenueRequest;
+import com.fast_food_drone_delivery_system.dto.response.DroneDashboardResponse;
 import com.fast_food_drone_delivery_system.dto.response.RevenueResponse;
 import com.fast_food_drone_delivery_system.service.IRevenueService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,12 @@ public class RevenueController {
     @GetMapping("/restaurant")
     public ResponseEntity<RestResponse<Long>> getRestaurantCount() {
         RestResponse<Long> response = revenueService.countRestaurants();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @GetMapping("/drone-status")
+    public  ResponseEntity<RestResponse<DroneDashboardResponse>> getDroneStatusSnapshot() {
+        RestResponse<DroneDashboardResponse> response = revenueService.getDroneStatusSnapshot();
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }

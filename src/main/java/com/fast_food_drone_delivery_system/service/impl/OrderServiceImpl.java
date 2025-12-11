@@ -110,7 +110,7 @@ public class OrderServiceImpl implements IOrderService {
                     throw new AppException(ErrorCode.DISH_SERVING_STOPPED);
                 }
 
-                double unitPrice = dish.getPrice().doubleValue();
+                double unitPrice = dish.getDiscount() != null ? dish.getPrice().doubleValue() - dish.getPrice().doubleValue() * (dish.getDiscount().doubleValue() / 100) : dish.getPrice().doubleValue();
                 double subtotal = unitPrice * item.quantity();
                 OrderItem orderItem = OrderItem.builder()
                         .id(IdGenerator.generateRandomId())

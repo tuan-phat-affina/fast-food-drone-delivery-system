@@ -56,6 +56,7 @@ public class DishServiceImpl implements IDishService {
         Dish dish = dishMapper.toDish(req);
         dish.setId(IdGenerator.generateRandomId());
         dish.setRestaurant(restaurant);
+        dish.setDiscount(req.getDiscount());
         dish.setStatus(DishStatus.AVAILABLE.name());
         dish.setCreatedAt(Instant.now());
         return RestResponse.ok(dishMapper.toDishResponse(dishRepository.save(dish)));
@@ -91,6 +92,7 @@ public class DishServiceImpl implements IDishService {
         // Cập nhật các trường trong món ăn
         dish.setName(req.getName() );
         dish.setDescription(req.getDescription());
+        dish.setDiscount(req.getDiscount());
         dish.setPrice(BigDecimal.valueOf(req.getPrice()));
 
         // Nếu muốn cập nhật thêm trường khác từ DishRequest, có thể tiếp tục ở đây
